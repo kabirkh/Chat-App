@@ -7,6 +7,12 @@ const {
   generateMesssage,
   generateLocationMessage,
 } = require("./utils/messages");
+const {
+  addUser,
+  removeUser,
+  getUser,
+  getUsersInRoom,
+} = require("./utils/users");
 
 const app = express();
 const server = http.createServer(app);
@@ -20,17 +26,31 @@ app.use(express.static(publicDirectoryPath));
 io.on("connection", (socket) => {
   console.log("New Web Socket connection");
 
-  socket.emit("message", generateMesssage("Welcome!"));
+  socket.on("join", (options, callback) => {
+    const { error, user } = addUser({ id: socket.id, ...options });
 
-  socket.broadcast.emit("message", generateMesssage("A new user joined"));
+    if (error) {
+      return callback(error);
+    }
+
+    socket.join(user.room);
+
+    socket.emit("message", generateMesssage("Welcome! " + user.username));
+    socket.broadcast
+      .to(user.room)
+      .emit("message", generateMesssage(`${user.username} has joined!`));
+
+    callback();
+  });
 
   socket.on("sendMessage", (message, callback) => {
+    const user = getUser(socket.id);
     const filter = new Filter();
 
     if (filter.isProfane(message)) {
       return callback("Profanity is not allowed!");
     }
-    io.emit("message", generateMesssage(message));
+    io.to(user.room).emit("message", generateMesssage(message));
     callback();
   });
 
@@ -45,7 +65,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    io.emit("message", generateMesssage("A user has left the chat"));
+    const user = removeUser(socket.id);
+
+    if (user) {
+      io.to(user.room).emit(
+        "message",
+        generateMesssage(`${user.username} has left the chat`)
+      );
+    }
   });
 });
 
