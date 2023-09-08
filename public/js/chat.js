@@ -8,7 +8,9 @@ const $messages = document.querySelector("#messages");
 
 //template
 const messageTemplate = document.querySelector("#message-template").innerHTML;
-const locationTemplate = document.querySelector("#location-template").innerHTML;
+const locationTemplate = document.querySelector(
+  "#location-message-template"
+).innerHTML;
 
 socket.on("message", (message) => {
   const html = Mustache.render(messageTemplate, {
