@@ -27,6 +27,7 @@ io.on("connection", (socket) => {
   console.log("New Web Socket connection");
 
   socket.on("join", (options, callback) => {
+
     const { error, user } = addUser({ id: socket.id, ...options });
 
     if (error) {
@@ -39,16 +40,19 @@ io.on("connection", (socket) => {
       "message",
       generateMesssage("Admin", "Welcome! " + user.username)
     );
+
     socket.broadcast
       .to(user.room)
       .emit(
         "message",
         generateMesssage("Admin", `${user.username} has joined!`)
       );
+
     io.to(user.room).emit("roomData",{
       room:user.room,
       users:getUsersInRoom(user.room)
     })
+
     callback();
   });
 
@@ -65,6 +69,7 @@ io.on("connection", (socket) => {
 
   socket.on("sendLocation", (location, callback) => {
     const user = getUser(socket.id);
+
     io.to(user.room).emit(
       "locationMessage",
       generateLocationMessage(
@@ -79,10 +84,12 @@ io.on("connection", (socket) => {
     const user = removeUser(socket.id);
 
     if (user) {
+      
       io.to(user.room).emit(
         "message",
         generateMesssage("Admin", `${user.username} has left the chat`)
       );
+
       io.to(user.room).emit("roomData",{
         room:user.room,
         users:getUsersInRoom(user.room)
